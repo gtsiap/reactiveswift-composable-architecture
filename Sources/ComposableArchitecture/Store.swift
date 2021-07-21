@@ -114,6 +114,7 @@ import ReactiveSwift
 /// See also: ``ViewStore`` to understand how one observes changes to the state in a ``Store`` and
 /// sends user actions.
 public final class Store<State, Action> {
+  private var currentState: State?
   @MutableProperty
   private(set) var state: State
   internal var producer: Effect<State, Never> {
@@ -368,7 +369,7 @@ public final class Store<State, Action> {
   ) -> Effect<Store<LocalState, Action>, Never> {
     self.producerScope(state: toLocalState, action: { $0 })
   }
-
+  
   func send(_ action: Action) {
     if !self.isSending {
       self.synchronousActionsToSend.append(action)
@@ -384,7 +385,12 @@ public final class Store<State, Action> {
         : self.bufferedActions.removeFirst()
 
       self.isSending = true
-      let effect = self.reducer(&self.state, action)
+      
+      if currentState == nil {
+          currentState = self.$state.value
+      }
+
+      let effect = self.reducer(&currentState!, action)
       self.isSending = false
 
       var didComplete = false
@@ -417,6 +423,11 @@ public final class Store<State, Action> {
       } else {
         effectDisposable.dispose()
       }
+    }
+    
+    if let currentState = currentState, synchronousActionsToSend.isEmpty {
+        state = currentState
+        self.currentState = nil
     }
   }
 
