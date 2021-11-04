@@ -44,7 +44,9 @@ extension Store {
   @discardableResult
   public func ifLet<Wrapped>(
     then unwrap: @escaping (Store<Wrapped, Action>) -> Void,
-    else: @escaping () -> Void = {}
+    else: @escaping () -> Void = {},
+    file: StaticString = #file,
+    line: UInt = #line
   ) -> Disposable where State == Wrapped? {
     let elseDisposable =
       self
@@ -52,7 +54,7 @@ extension Store {
         state: { state -> Effect<Wrapped?, Never> in
           state
             .skipRepeats { ($0 != nil) == ($1 != nil) }
-        }
+        }, file: file, line: line
       )
       .startWithValues { store in
         if store.state == nil { `else`() }
@@ -65,7 +67,7 @@ extension Store {
           state
             .skipRepeats { ($0 != nil) == ($1 != nil) }
             .compactMap { $0 }
-        }
+        }, file: file, line: line
       )
       .startWithValues(unwrap)
 
