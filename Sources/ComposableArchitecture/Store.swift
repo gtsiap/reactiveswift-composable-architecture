@@ -164,18 +164,24 @@ public final class Store<State, Action> {
   /// - Returns: A new store with its domain (state and action) transformed.
   public func scope<LocalState, LocalAction>(
     state toLocalState: @escaping (State) -> LocalState,
-    action fromLocalAction: @escaping (LocalAction) -> Action
+    action fromLocalAction: @escaping (LocalAction) -> Action,
+    file: StaticString = #file,
+    line: UInt = #line
   ) -> Store<LocalState, LocalAction> {
     let localStore = Store<LocalState, LocalAction>(
       initialState: toLocalState(self.state),
       reducer: { localState, localAction in
+        os_signpost(.begin, log: osLog, name: "TCAStore.scope.reducer", file, line)
         self.send(fromLocalAction(localAction))
         localState = toLocalState(self.state)
+        os_signpost(.end, log: osLog, name: "TCAStore.scope.reducer")
         return .none
       }
     )
     localStore.parentDisposable = self.$state.producer.startWithValues { [weak localStore] state in
+      os_signpost(.begin, log: osLog, name: "TCAStore.scope.subscription", file, line)
       localStore?.state = toLocalState(state)
+      os_signpost(.end, log: osLog, name: "TCAStore.scope.subscription")
     }
     return localStore
   }
@@ -185,9 +191,11 @@ public final class Store<State, Action> {
   /// - Parameter toLocalState: A function that transforms `State` into `LocalState`.
   /// - Returns: A new store with its domain (state and action) transformed.
   public func scope<LocalState>(
-    state toLocalState: @escaping (State) -> LocalState
+    state toLocalState: @escaping (State) -> LocalState,
+    file: StaticString = #file,
+    line: UInt = #line
   ) -> Store<LocalState, Action> {
-    self.scope(state: toLocalState, action: { $0 })
+    self.scope(state: toLocalState, action: { $0 }, file: file, line: line)
   }
 
   /// Scopes the store to a producer of stores of more local state and local actions.
@@ -199,7 +207,9 @@ public final class Store<State, Action> {
   /// - Returns: A producer of stores with its domain (state and action) transformed.
   public func producerScope<LocalState, LocalAction>(
     state toLocalState: @escaping (Effect<State, Never>) -> Effect<LocalState, Never>,
-    action fromLocalAction: @escaping (LocalAction) -> Action
+    action fromLocalAction: @escaping (LocalAction) -> Action,
+    file: StaticString = #file,
+    line: UInt = #line
   ) -> Effect<Store<LocalState, LocalAction>, Never> {
 
     func extractLocalState(_ state: State) -> LocalState? {
@@ -214,15 +224,19 @@ public final class Store<State, Action> {
         let localStore = Store<LocalState, LocalAction>(
           initialState: localState,
           reducer: { localState, localAction in
+            os_signpost(.begin, log: osLog, name: "TCAStore.producerScope.reducer", file, line)
             self.send(fromLocalAction(localAction))
             localState = extractLocalState(self.state) ?? localState
+            os_signpost(.end, log: osLog, name: "TCAStore.producerScope.reducer")
             return .none
           }
         )
         localStore.parentDisposable = self.$state.producer.startWithValues {
           [weak localStore] state in
           guard let localStore = localStore else { return }
+          os_signpost(.begin, log: osLog, name: "TCAStore.producerScope.subscription", file, line)
           localStore.state = extractLocalState(state) ?? localStore.state
+          os_signpost(.end, log: osLog, name: "TCAStore.producerScope.subscription")
         }
         return localStore
       }
@@ -363,3 +377,6 @@ Consider using `Produced<State>` instead, this typealias is added for backward c
 """
 )
 public typealias StoreProducer<State> = Produced<State>
+
+import OSLog
+let osLog = OSLog(subsystem: "TCAStore", category: .pointsOfInterest)

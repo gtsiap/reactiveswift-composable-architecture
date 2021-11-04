@@ -7,6 +7,8 @@ import ReactiveSwift
   import SwiftUI
 #endif
 
+import OSLog
+
 /// A `ViewStore` is an object that can observe state changes and send actions. They are most
 /// commonly used in views, such as SwiftUI views, UIView or UIViewController, but they can be
 /// used anywhere it makes sense to observe state and send actions.
@@ -79,14 +81,18 @@ public final class ViewStore<State, Action> {
   ///     equal, repeat view computations are removed.
   public init(
     _ store: Store<State, Action>,
-    removeDuplicates isDuplicate: @escaping (State, State) -> Bool
+    removeDuplicates isDuplicate: @escaping (State, State) -> Bool,
+    file: StaticString = #file,
+    line: UInt = #line
   ) {
     let produced = Produced(by: store.$state.producer, isEqual: isDuplicate)
     self.produced = produced
     self.state = store.state
     self._send = store.send
     self.viewDisposable = produced.producer.startWithValues { [weak self] state in
+      os_signpost(.begin, log: osLog, name: "TCAViewStore.subscription", file, line)
       self?.state = state
+      os_signpost(.end, log: osLog, name: "TCAViewStore.subscription")
     }
   }
 
