@@ -171,7 +171,7 @@ public final class Store<State, Action> {
     let localStore = Store<LocalState, LocalAction>(
       initialState: toLocalState(self.state),
       reducer: { localState, localAction in
-        os_signpost(.begin, log: osLog, name: "TCAStore.scope.reducer", "%s:%s", "\(file)", line)
+        os_signpost(.begin, log: osLog, name: "TCAStore.scope.reducer", "%s:%s", "\(file)", "\(line)")
         self.send(fromLocalAction(localAction))
         localState = toLocalState(self.state)
         os_signpost(.end, log: osLog, name: "TCAStore.scope.reducer")
@@ -179,7 +179,7 @@ public final class Store<State, Action> {
       }
     )
     localStore.parentDisposable = self.$state.producer.startWithValues { [weak localStore] state in
-      os_signpost(.begin, log: osLog, name: "TCAStore.scope.subscription", "%s:%s", "\(file)", line)
+      os_signpost(.begin, log: osLog, name: "TCAStore.scope.subscription", "%s:%s", "\(file)", "\(line)")
       localStore?.state = toLocalState(state)
       os_signpost(.end, log: osLog, name: "TCAStore.scope.subscription")
     }
@@ -224,7 +224,7 @@ public final class Store<State, Action> {
         let localStore = Store<LocalState, LocalAction>(
           initialState: localState,
           reducer: { localState, localAction in
-            os_signpost(.begin, log: osLog, name: "TCAStore.producerScope.reducer", "%s:%s", "\(file)", line)
+            os_signpost(.begin, log: osLog, name: "TCAStore.producerScope.reducer", "%s:%s", "\(file)", "\(line)")
             self.send(fromLocalAction(localAction))
             localState = extractLocalState(self.state) ?? localState
             os_signpost(.end, log: osLog, name: "TCAStore.producerScope.reducer")
@@ -234,7 +234,7 @@ public final class Store<State, Action> {
         localStore.parentDisposable = self.$state.producer.startWithValues {
           [weak localStore] state in
           guard let localStore = localStore else { return }
-          os_signpost(.begin, log: osLog, name: "TCAStore.producerScope.subscription", "%s:%s", "\(file)", line)
+          os_signpost(.begin, log: osLog, name: "TCAStore.producerScope.subscription", "%s:%s", "\(file)", "\(line)")
           localStore.state = extractLocalState(state) ?? localStore.state
           os_signpost(.end, log: osLog, name: "TCAStore.producerScope.subscription")
         }

@@ -90,7 +90,7 @@ public final class ViewStore<State, Action> {
     self.state = store.state
     self._send = store.send
     self.viewDisposable = produced.producer.startWithValues { [weak self] state in
-      os_signpost(.begin, log: osLog, name: "TCAViewStore.subscription", "%s:%s", "\(file)", line)
+      os_signpost(.begin, log: osLog, name: "TCAViewStore.subscription", "%s:%s", "\(file)", "\(line)")
       self?.state = state
       os_signpost(.end, log: osLog, name: "TCAViewStore.subscription")
     }
