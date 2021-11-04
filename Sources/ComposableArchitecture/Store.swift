@@ -249,9 +249,11 @@ public final class Store<State, Action> {
   /// - Returns: A producer of stores with its domain (state and action)
   ///   transformed.
   public func producerScope<LocalState>(
-    state toLocalState: @escaping (Effect<State, Never>) -> Effect<LocalState, Never>
+    state toLocalState: @escaping (Effect<State, Never>) -> Effect<LocalState, Never>,
+    file: StaticString = #file,
+    line: UInt = #line
   ) -> Effect<Store<LocalState, Action>, Never> {
-    self.producerScope(state: toLocalState, action: { $0 })
+    self.producerScope(state: toLocalState, action: { $0 }, file: file, line: line)
   }
 
   func send(_ action: Action) {
